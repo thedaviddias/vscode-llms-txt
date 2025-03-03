@@ -12,6 +12,8 @@
 
 A VS Code extension that simplifies browsing, searching, and managing LLMS.txt files from various websites. Access and view LLMS.txt content directly within your editor, making it easier to understand how different websites interact with AI language models.
 
+![Screenshot](images/vscode-llms-txt-1.png)
+
 ## Installation
 
 1. Open VS Code

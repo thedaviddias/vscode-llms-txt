@@ -1,7 +1,7 @@
 {
   "name": "vscode-llms-txt",
   "displayName": "LLMS.txt Explorer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browse, search, and view LLMS.txt files from various websites",
   "type": "commonjs",
   "homepage": "https://github.com/thedaviddias/vscode-llms-txt/blob/main/README.md",
@@ -19,6 +19,7 @@
     "url": "https://github.com/sponsors/TheDavidDias"
   },
   "publisher": "TheDavidDias",
+  "icon": "images/icon.png",
   "main": "./dist/extension.js",
   "scripts": {
     "compile": "tsc -p ./",
