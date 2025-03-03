@@ -1,9 +1,16 @@
 {
-  "name": "llms-txt-extension",
-  "displayName": "LLMS.txt Extension",
+  "name": "vscode-llms-txt",
+  "displayName": "LLMS.txt Extension for VS Code",
   "version": "0.1.0",
   "description": "Browse, search, and view LLMS.txt files from various websites",
-  "categories": ["Other"],
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thedaviddias/vscode-llms-txt.git"
+  },
+  "categories": [
+    "Other"
+  ],
   "publisher": "thedaviddias",
   "main": "./dist/extension.js",
   "scripts": {
@@ -14,6 +21,7 @@
     "lint": "eslint src --ext ts",
     "package": "vsce package",
     "pretest": "npm run compile && npm run lint",
+    "preinstall": "npx only-allow pnpm",
     "test": "node ./out/test/runTest.js",
     "test-compile": "tsc -p ./",
     "vscode:prepublish": "npm run esbuild-base -- --minify",
@@ -60,12 +68,50 @@
         "command": "llms-txt-extension.removeFromFavorites",
         "title": "Remove from Favorites",
         "icon": "$(star-full)"
+      },
+      {
+        "command": "llms-txt-extension.filterByCategory",
+        "title": "Filter by Category"
+      },
+      {
+        "command": "llms-txt-extension.clearCategoryFilter",
+        "title": "Clear Category Filter"
+      },
+      {
+        "command": "llms-txt-extension.searchWebsites",
+        "title": "Search Websites",
+        "icon": "$(search)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "llms-txt-extension.filterByCategory",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "focusedView == llmsTxtWebsites"
+      },
+      {
+        "command": "llms-txt-extension.clearCategoryFilter",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+shift+x",
+        "when": "focusedView == llmsTxtWebsites"
+      },
+      {
+        "command": "llms-txt-extension.searchWebsites",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "focusedView == llmsTxtWebsites"
       }
     ],
     "menus": {
       "view/title": [
         {
           "command": "llms-txt-extension.refreshWebsites",
+          "when": "view == llmsTxtWebsites",
+          "group": "navigation"
+        },
+        {
+          "command": "llms-txt-extension.searchWebsites",
           "when": "view == llmsTxtWebsites",
           "group": "navigation"
         }
@@ -172,7 +218,8 @@
   },
   "activationEvents": [],
   "dependencies": {
-    "axios": "^1.4.0"
+    "axios": "^1.4.0",
+    "fuse.js": "^7.1.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

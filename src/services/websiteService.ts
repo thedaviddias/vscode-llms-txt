@@ -22,7 +22,8 @@ export async function fetchWebsites(): Promise<Website[]> {
       llmsTxtUrl: site.llmsTxtUrl || site.llmsUrl || '',
       llmsFullTxtUrl: site.llmsFullTxtUrl || site.llmsFullUrl || '',
       category: site.category,
-      favicon: site.favicon
+      favicon: site.favicon,
+      publishedAt: site.publishedAt
     }))
   } catch (error) {
     console.error('Error fetching websites:', error)

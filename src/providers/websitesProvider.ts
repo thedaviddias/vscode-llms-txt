@@ -3,6 +3,7 @@ import type { Website } from '../types'
 import { fetchWebsites } from '../services/websiteService'
 import { CategoryItem, NoResultsItem, WebsiteItem } from '../treeItems'
 import type { FavoritesProvider } from './favoritesProvider'
+import { SearchService } from '../services/searchService'
 
 export type TreeItemType = WebsiteItem | CategoryItem | NoResultsItem
 
@@ -22,20 +23,22 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
   private childToParentMap = new Map<string, CategoryItem>()
   private treeView?: vscode.TreeView<TreeItemType>
   private currentSearchQuery = ''
+  private currentCategory?: string
   private static readonly CACHE_KEY = 'websitesCache'
   private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
   private static readonly CATEGORY_STATES_KEY = 'categoryStates'
   private categoryStates: Map<string, boolean> = new Map() // true = expanded, false = collapsed
   private favoritesProvider?: FavoritesProvider
+  private searchService: SearchService
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context
+    this.searchService = new SearchService([])
 
-    // Load category states
-    const savedStates = this.context.globalState.get<Record<string, boolean>>(WebsitesProvider.CATEGORY_STATES_KEY)
-    if (savedStates) {
-      this.categoryStates = new Map(Object.entries(savedStates))
-    }
+    // Clear any existing category states to ensure all start collapsed
+    this.categoryStates = new Map()
+    this.context.globalState.update(WebsitesProvider.CATEGORY_STATES_KEY, {})
+    console.log('Category states reset to collapsed')
 
     // Load cached websites if available and not expired
     const cache = this.context.globalState.get<{
@@ -120,29 +123,18 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
   async refresh(): Promise<void> {
     try {
       console.log('Refreshing websites...')
-      if (!this.currentSearchQuery) {
-        // If no search query, fetch all websites
-        this.websites = await fetchWebsites()
-        console.log('Fetched websites:', this.websites.length)
+      const allWebsites = await fetchWebsites()
+      console.log('Fetched websites:', allWebsites.length)
 
-        // Update cache with timestamp
-        await this.context.globalState.update(WebsitesProvider.CACHE_KEY, {
-          timestamp: Date.now(),
-          websites: this.websites
-        })
-        console.log('Websites cached at:', new Date())
-      } else {
-        // If there's a search query, filter the websites
-        const allWebsites = await fetchWebsites()
-        console.log('Fetched all websites for search:', allWebsites.length)
-        this.websites = allWebsites.filter(
-          website =>
-            website.name.toLowerCase().includes(this.currentSearchQuery) ||
-            website.domain.toLowerCase().includes(this.currentSearchQuery) ||
-            website.description.toLowerCase().includes(this.currentSearchQuery)
-        )
-        console.log('Filtered websites:', this.websites.length)
-      }
+      this.websites = allWebsites
+      await this.searchService.updateDataset(allWebsites)
+
+      // Update cache with timestamp
+      await this.context.globalState.update(WebsitesProvider.CACHE_KEY, {
+        timestamp: Date.now(),
+        websites: allWebsites
+      })
+      console.log('Websites cached at:', new Date())
 
       // Organize websites by category
       this.organizeWebsitesByCategory()
@@ -151,10 +143,18 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
       this._onDidChangeTreeData.fire(undefined)
       console.log('Tree data updated')
 
-      // Only expand categories if there's a search query
+      // Wait a bit for the tree view to update before expanding categories
       if (this.currentSearchQuery) {
-        await this.expandAllCategories()
-        console.log('Categories expanded for search results')
+        // Use setTimeout to ensure tree view is updated
+        setTimeout(async () => {
+          try {
+            await this.expandAllCategories()
+            console.log('Categories expanded for search results')
+          } catch (error) {
+            console.log('Error expanding categories:', error)
+            // Don't throw here as it's not critical
+          }
+        }, 100)
       }
     } catch (error) {
       console.error('Error refreshing websites:', error)
@@ -175,7 +175,13 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
 
     for (const item of this.rootItems) {
       if (item instanceof CategoryItem) {
-        await this.treeView.reveal(item, { expand: true })
+        try {
+          await this.treeView.reveal(item, { expand: true, focus: false })
+          // Add small delay between expansions to prevent race conditions
+          await new Promise(resolve => setTimeout(resolve, 50))
+        } catch (error) {
+          console.log(`Error expanding category ${item.label}:`, error)
+        }
       }
     }
   }
@@ -187,6 +193,11 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
     console.log('Organizing websites by category...')
     this.categories.clear()
     this.childToParentMap.clear()
+
+    // Get filtered websites if there's a search query
+    const websitesToShow = this.currentSearchQuery
+      ? this.searchService.search(this.currentSearchQuery, this.currentCategory)
+      : this.websites
 
     // Category definitions with icons, descriptions, and slug mappings
     const categoryConfig = new Map([
@@ -228,13 +239,13 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
     ])
 
     // If no websites are found, create a special "no results" category
-    if (this.websites.length === 0) {
+    if (websitesToShow.length === 0) {
       console.log('No websites found, showing NoResultsItem')
       this.rootItems = [new NoResultsItem()]
       return
     }
 
-    for (const website of this.websites) {
+    for (const website of websitesToShow) {
       const categorySlug = website.category || 'uncategorized'
 
       if (!this.categories.has(categorySlug)) {
@@ -255,13 +266,17 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
         icon: 'folder',
         description: `${categorySlug} websites`
       }
-      return new CategoryItem(
+
+      // Create category with collapsed state
+      const categoryItem = new CategoryItem(
         config.displayName,
         websites,
         config.icon,
         config.description,
         isExpanded
       )
+
+      return categoryItem
     })
 
     console.log('Categories created:', this.categories.size)
@@ -337,14 +352,7 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
    * Searches websites by query
    */
   searchWebsites(query: string): Website[] {
-    const lowerQuery = query.toLowerCase()
-
-    return this.websites.filter(
-      website =>
-        website.name.toLowerCase().includes(lowerQuery) ||
-        website.domain.toLowerCase().includes(lowerQuery) ||
-        website.description.toLowerCase().includes(lowerQuery)
-    )
+    return this.searchService.search(query, this.currentCategory)
   }
 
   private getItemLabel(item: WebsiteItem | CategoryItem): string {
@@ -373,10 +381,41 @@ export class WebsitesProvider implements vscode.TreeDataProvider<TreeItemType> {
    * Clears the current search
    */
   public clearSearch(): void {
-    this._onDidChangeTreeData.fire(undefined)
+    this.currentSearchQuery = ''
+    this.refresh()
   }
 
   setFavoritesProvider(provider: FavoritesProvider) {
     this.favoritesProvider = provider
+  }
+
+  /**
+   * Get search suggestions
+   */
+  getSearchSuggestions(query: string): string[] {
+    return this.searchService.getSuggestions(query, this.currentCategory)
+  }
+
+  /**
+   * Get all available categories
+   */
+  getCategories(): string[] {
+    return Array.from(this.categories.keys())
+  }
+
+  /**
+   * Set the current category filter
+   */
+  setCurrentCategory(category: string): void {
+    this.currentCategory = category
+    this.refresh()
+  }
+
+  /**
+   * Clear the current category filter
+   */
+  clearCategoryFilter(): void {
+    this.currentCategory = undefined
+    this.refresh()
   }
 }

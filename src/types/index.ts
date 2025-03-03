@@ -1,3 +1,5 @@
+import type * as vscode from 'vscode'
+
 /**
  * Interface representing a website with LLMS.txt information
  */
@@ -5,10 +7,10 @@ export interface Website {
   name: string
   domain: string
   description: string
-  llmsTxtUrl: string
-  llmsFullTxtUrl: string
-  category: string
-  favicon: string
+  category?: string
+  favicon?: string
+  llmsTxtUrl?: string
+  llmsFullTxtUrl?: string
 }
 
 /**
@@ -24,6 +26,7 @@ export interface WebsiteApiResponse {
   llmsFullUrl?: string
   category: string
   favicon: string
+  publishedAt: string
 }
 
 /**
@@ -32,4 +35,9 @@ export interface WebsiteApiResponse {
 export interface WebsiteTreeItem {
   website: Website
   children?: WebsiteTreeItem[]
+}
+
+export interface WebsiteQuickPickItem extends vscode.QuickPickItem {
+  website?: Website
+  suggestion?: boolean
 }
