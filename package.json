@@ -1,0 +1,245 @@
+{
+  "name": "vscode-llms-txt",
+  "displayName": "LLMS.txt Explorer",
+  "version": "0.1.0",
+  "description": "Browse, search, and view LLMS.txt files from various websites",
+  "type": "commonjs",
+  "homepage": "https://github.com/thedaviddias/vscode-llms-txt/blob/main/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thedaviddias/vscode-llms-txt.git"
+  },
+  "categories": [
+    "AI",
+    "Snippets",
+    "Programming Languages",
+    "Other"
+  ],
+  "sponsor": {
+    "url": "https://github.com/sponsors/TheDavidDias"
+  },
+  "publisher": "TheDavidDias",
+  "main": "./dist/extension.js",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "esbuild": "pnpm esbuild-base --sourcemap",
+    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "esbuild-watch": "pnpm esbuild-base --sourcemap --watch",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "pretest": "pnpm compile && pnpm lint",
+    "test": "node ./out/test/runTest.js",
+    "test-compile": "tsc -p ./",
+    "vscode:prepublish": "pnpm esbuild-base --minify",
+    "watch": "tsc -watch -p ./"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "llms-txt-extension.refreshWebsites",
+        "title": "Refresh Websites",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "llms-txt-extension.copyLlmsTxtUrl",
+        "title": "LLMS.txt: Copy URL",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "llms-txt-extension.viewLlmsTxtContent",
+        "title": "LLMS.txt: View Content",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "llms-txt-extension.copyLlmsFullTxtUrl",
+        "title": "LLMS Full.txt: Copy URL",
+        "icon": "$(notebook)"
+      },
+      {
+        "command": "llms-txt-extension.viewLlmsFullTxtContent",
+        "title": "LLMS Full.txt: View Content",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "llms-txt-extension.visitWebsite",
+        "title": "Visit Website",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "llms-txt-extension.addToFavorites",
+        "title": "Add to Favorites",
+        "icon": "$(star-empty)"
+      },
+      {
+        "command": "llms-txt-extension.removeFromFavorites",
+        "title": "Remove from Favorites",
+        "icon": "$(star-full)"
+      },
+      {
+        "command": "llms-txt-extension.filterByCategory",
+        "title": "Filter by Category"
+      },
+      {
+        "command": "llms-txt-extension.clearCategoryFilter",
+        "title": "Clear Category Filter"
+      },
+      {
+        "command": "llms-txt-extension.searchWebsites",
+        "title": "Search Websites",
+        "icon": "$(search)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "llms-txt-extension.filterByCategory",
+        "key": "ctrl+shift+f",
+        "mac": "cmd+shift+f",
+        "when": "focusedView == llmsTxtWebsites"
+      },
+      {
+        "command": "llms-txt-extension.clearCategoryFilter",
+        "key": "ctrl+shift+x",
+        "mac": "cmd+shift+x",
+        "when": "focusedView == llmsTxtWebsites"
+      },
+      {
+        "command": "llms-txt-extension.searchWebsites",
+        "key": "ctrl+shift+s",
+        "mac": "cmd+shift+s",
+        "when": "focusedView == llmsTxtWebsites"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "llms-txt-extension.refreshWebsites",
+          "when": "view == llmsTxtWebsites",
+          "group": "navigation"
+        },
+        {
+          "command": "llms-txt-extension.searchWebsites",
+          "when": "view == llmsTxtWebsites",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "llms-txt-extension.addToFavorites",
+          "when": "view == llmsTxtWebsites && viewItem == website",
+          "group": "inline@0"
+        },
+        {
+          "command": "llms-txt-extension.removeFromFavorites",
+          "when": "view == llmsTxtWebsites && viewItem == website:favorite",
+          "group": "inline@0"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsTxtUrl",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "inline@1"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsFullTxtUrl",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "inline@2"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsTxtUrl",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "1_llms@1"
+        },
+        {
+          "command": "llms-txt-extension.viewLlmsTxtContent",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "1_llms@2"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsFullTxtUrl",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "2_llmsfull@1"
+        },
+        {
+          "command": "llms-txt-extension.viewLlmsFullTxtContent",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "2_llmsfull@2"
+        },
+        {
+          "command": "llms-txt-extension.visitWebsite",
+          "when": "view == llmsTxtWebsites && viewItem =~ /website/",
+          "group": "3_website@1"
+        },
+        {
+          "command": "llms-txt-extension.addToFavorites",
+          "when": "view == llmsTxtWebsites && viewItem == website",
+          "group": "4_favorites@1"
+        },
+        {
+          "command": "llms-txt-extension.removeFromFavorites",
+          "when": "view == llmsTxtWebsites && viewItem == website:favorite",
+          "group": "4_favorites@1"
+        },
+        {
+          "command": "llms-txt-extension.removeFromFavorites",
+          "when": "view == llmsTxtFavorites && viewItem == website:favorite",
+          "group": "inline@0"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsTxtUrl",
+          "when": "view == llmsTxtFavorites && viewItem =~ /website/",
+          "group": "inline@1"
+        },
+        {
+          "command": "llms-txt-extension.copyLlmsFullTxtUrl",
+          "when": "view == llmsTxtFavorites && viewItem =~ /website/",
+          "group": "inline@2"
+        },
+        {
+          "command": "llms-txt-extension.removeFromFavorites",
+          "when": "view == llmsTxtFavorites && viewItem == website:favorite",
+          "group": "4_favorites@1"
+        }
+      ]
+    },
+    "views": {
+      "llms-txt-explorer": [
+        {
+          "id": "llmsTxtFavorites",
+          "name": "Favorites"
+        },
+        {
+          "id": "llmsTxtWebsites",
+          "name": "Websites"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "llms-txt-explorer",
+          "title": "LLMS.txt Explorer",
+          "icon": "$(globe)"
+        }
+      ]
+    }
+  },
+  "activationEvents": [],
+  "dependencies": {
+    "@types/node": "^22.13.8",
+    "@types/vscode": "^1.97.0",
+    "axios": "^1.8.1",
+    "fuse.js": "^7.1.0"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "esbuild": "^0.25.0",
+    "glob": "^11.0.1",
+    "mocha": "^11.1.0",
+    "typescript": "^5.8.2",
+    "vsce": "^2.6.3"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  }
+}
